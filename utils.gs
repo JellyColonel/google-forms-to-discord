@@ -2,6 +2,7 @@ class DiscordMessageBuilder {
   constructor() {
     this.content = "";
     this.items = [];
+    this.selectedRole = null;
   }
 
   addMentionsByRole(roleName) {
@@ -11,6 +12,7 @@ class DiscordMessageBuilder {
       return;
     }
 
+    this.selectedRole = role;
     this.content += `<@&${role.headRoleId}> <@&${role.depHeadRoleId}>`;
   }
 
@@ -18,13 +20,13 @@ class DiscordMessageBuilder {
     if (!answer) return;
 
     try {
-      const parts = typeof answer === 'string' ? 
-        answer.match(/[\s\S]{1,1024}/g) || [] : 
+      const parts = typeof answer === 'string' ?
+        answer.match(/[\s\S]{1,1024}/g) || [] :
         [answer.toString()];
 
       parts.forEach((part, index) => {
         this.items.push({
-          name: index === 0 ? question : `${question} (cont.)`,
+          name: index === 0 ? question : `${question} (continued)`,
           value: part,
           inline: false
         });
@@ -39,12 +41,26 @@ class DiscordMessageBuilder {
     }
   }
 
+  getEmbedColor() {
+    // If role colors are enabled and a role is selected, use role color
+    if (CONFIG.discord.embed.color.useRoleColors && this.selectedRole?.embedColor) {
+      return ColorUtils.hexToDecimal(this.selectedRole.embedColor);
+    }
+    // Otherwise use default color
+    return ColorUtils.hexToDecimal(CONFIG.discord.embed.color.defaultColor);
+  }
+
   buildPayload() {
+    // Convert HEX color to decimal for Discord
+    const embedColor = this.selectedRole?.embedColor
+      ? ColorUtils.hexToDecimal(this.selectedRole.embedColor)
+      : ColorUtils.hexToDecimal(CONFIG.discord.embed.defaultColor);
+
     return {
       content: this.content,
       embeds: [{
         title: CONFIG.discord.embed.title,
-        color: CONFIG.discord.embed.color,
+        color: embedColor,
         fields: this.items,
         url: CONFIG.discord.embed.url,
         image: {
