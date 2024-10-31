@@ -1,42 +1,27 @@
 const ROLES = {
-  HAD: {
-    roleName: "HAD",
-    roleId: "1275781417686532116",
+  "HAD | Hospital Administration Department": {
+    roleName: "HAD | Hospital Administration Department",
     curatorRoleId: "1274142510460964945",
-    headRoleId: "1274111070444982369",
-    depHeadRoleId: "1274141601869991936",
-    embedColor: "#ff0a0e"
+    embedColor: "#ff0a0e",
   },
-  PM: {
-    roleName: "PM",
-    roleId: "1275781416034242682",
+  "PM | Paramedic": {
+    roleName: "PM | Paramedic",
     curatorRoleId: "1274142507789324299",
-    headRoleId: "1287327583112925289",
-    depHeadRoleId: "1287327650880163840",
-    embedColor: "#3498db"
+    embedColor: "#3498db",
   },
-  DI: {
-    roleName: "DI",
-    roleId: "1275780097055391755",
+  "DI | Department of Internship": {
+    roleName: "DI | Department of Internship",
     curatorRoleId: "1274141607784091658",
-    headRoleId: "1274111070444982367",
-    depHeadRoleId: "1274141612288512031",
-    embedColor: "#2ecc71"
+    embedColor: "#2ecc71",
   },
-  PSED: {
-    roleName: "PSED",
-    roleId: "1275781412578005002",
+  "PSED | Psychological And Sanitary Epidemiological Department": {
+    roleName: "PSED | Psychological And Sanitary Epidemiological Department",
     curatorRoleId: "1274142514642948107",
-    headRoleId: "1274111070444982368",
-    depHeadRoleId: "1274141615702806619",
-    embedColor: "#d39d39"
+    embedColor: "#d39d39",
   },
-  FD: {
-    roleName: "FD",
-    roleId: "1275781405191700632",
-    curatorRoleId: "483906743567646722",
-    headRoleId: "1287327689325416498",
-    depHeadRoleId: "1287327760938696735",
-    embedColor: "#e9600c"
-  }
+  "FD | Fire department": {
+    roleName: "FD | Fire department",
+    curatorRoleId: "1274142505021083699",
+    embedColor: "#e9600c",
+  },
 };

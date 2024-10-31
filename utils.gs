@@ -3,6 +3,7 @@ class DiscordMessageBuilder {
     this.content = "";
     this.items = [];
     this.selectedRole = null;
+    this.MAX_FIELDS_PER_EMBED = 25;
   }
 
   addMentionsByRole(roleName) {
@@ -13,64 +14,127 @@ class DiscordMessageBuilder {
     }
 
     this.selectedRole = role;
-    this.content += `<@&${role.headRoleId}> <@&${role.depHeadRoleId}>`;
+    this.content += `<@&${role.curatorRoleId}>`;
   }
 
   addField(question, answer) {
-    if (!answer) return;
+    if (!answer && answer !== 0) return;
 
     try {
-      const parts = typeof answer === 'string' ?
-        answer.match(/[\s\S]{1,1024}/g) || [] :
-        [answer.toString()];
+      const value = String(answer).trim();
+      if (!value) return;
 
-      parts.forEach((part, index) => {
-        this.items.push({
-          name: index === 0 ? question : `${question} (continued)`,
-          value: part,
-          inline: false
-        });
+      this.items.push({
+        name: String(question).trim(),
+        value: value,
+        inline: false,
       });
     } catch (error) {
       console.error(`Error processing field ${question}:`, error);
-      this.items.push({
-        name: question,
-        value: "Error processing response",
-        inline: false
-      });
     }
   }
 
   getEmbedColor() {
-    // If role colors are enabled and a role is selected, use role color
-    if (CONFIG.discord.embed.color.useRoleColors && this.selectedRole?.embedColor) {
-      return ColorUtils.hexToDecimal(this.selectedRole.embedColor);
+    try {
+      if (
+        CONFIG.discord.embed.color.useRoleColors &&
+        this.selectedRole?.embedColor
+      ) {
+        return ColorUtils.hexToDecimal(this.selectedRole.embedColor) || 7506394;
+      }
+      return (
+        ColorUtils.hexToDecimal(CONFIG.discord.embed.color.defaultColor) ||
+        7506394
+      );
+    } catch (error) {
+      console.error("Error processing color:", error);
+      return 7506394;
     }
-    // Otherwise use default color
-    return ColorUtils.hexToDecimal(CONFIG.discord.embed.color.defaultColor);
+  }
+
+  createFooter() {
+    if (!CONFIG.discord.embed.footerText?.trim()) {
+      return undefined;
+    }
+
+    const footer = {
+      text: CONFIG.discord.embed.footerText.trim(),
+    };
+
+    if (CONFIG.discord.embed.footerIcon?.trim()) {
+      footer.icon_url = CONFIG.discord.embed.footerIcon.trim();
+    }
+
+    return footer;
+  }
+
+  createEmbed(fields, isFirst, isLast) {
+    const embed = {
+      color: this.getEmbedColor(),
+      fields: fields,
+    };
+
+    if (isFirst) {
+      embed.title = CONFIG.discord.embed.title || "Form Submission";
+      if (CONFIG.discord.embed.url) {
+        embed.url = CONFIG.discord.embed.url;
+      }
+    }
+
+    if (isLast) {
+      const footer = this.createFooter();
+      if (footer) {
+        embed.footer = footer;
+      }
+
+      if (CONFIG.discord.embed.showTimestamp) {
+        embed.timestamp = new Date().toISOString();
+      }
+
+      // Add image to the last embed if provided
+      if (CONFIG.discord.embed.imageUrl?.trim()) {
+        embed.image = {
+          url: CONFIG.discord.embed.imageUrl.trim(),
+        };
+      }
+    }
+
+    return embed;
   }
 
   buildPayload() {
-    // Convert HEX color to decimal for Discord
-    const embedColor = this.selectedRole?.embedColor
-      ? ColorUtils.hexToDecimal(this.selectedRole.embedColor)
-      : ColorUtils.hexToDecimal(CONFIG.discord.embed.defaultColor);
+    // Split fields into chunks of 25
+    const chunks = [];
+    for (let i = 0; i < this.items.length; i += this.MAX_FIELDS_PER_EMBED) {
+      chunks.push(this.items.slice(i, i + this.MAX_FIELDS_PER_EMBED));
+    }
 
-    return {
-      content: this.content,
-      embeds: [{
-        title: CONFIG.discord.embed.title,
-        color: embedColor,
-        fields: this.items,
-        url: CONFIG.discord.embed.url,
-        image: {
-          url: CONFIG.discord.embed.imageUrl,
-        },
-        footer: {
-          text: CONFIG.discord.embed.footerText
-        },
-        timestamp: new Date().toISOString()
-      }]
+    // Create an embed for each chunk
+    const embeds = chunks.map((chunk, index) => {
+      const isFirst = index === 0;
+      const isLast = index === chunks.length - 1;
+      return this.createEmbed(chunk, isFirst, isLast);
+    });
+
+    // Build the final payload
+    const payload = {
+      embeds: embeds,
     };
+
+    // Add content only if it's not empty
+    if (this.content.trim()) {
+      payload.content = this.content.trim();
+    }
+
+    // Add username only if it's provided and not empty
+    if (CONFIG.discord.username?.trim()) {
+      payload.username = CONFIG.discord.username.trim();
+    }
+
+    // Add avatar URL only if it's provided and not empty
+    if (CONFIG.discord.avatarUrl?.trim()) {
+      payload.avatar_url = CONFIG.discord.avatarUrl.trim();
+    }
+    return payload;
   }
 }
