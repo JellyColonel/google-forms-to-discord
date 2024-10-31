@@ -13,22 +13,23 @@ class DiscordMessageBuilder {
     }
 
     this.selectedRole = role;
-    this.content += `<@&${role.headRoleId}> <@&${role.depHeadRoleId}>`;
+    this.content += `<@&${role.depHeadRoleId}> <@&${role.headRoleId}>`;
   }
 
   addField(question, answer) {
     if (!answer) return;
 
     try {
-      const parts = typeof answer === 'string' ?
-        answer.match(/[\s\S]{1,1024}/g) || [] :
-        [answer.toString()];
+      const parts =
+        typeof answer === "string"
+          ? answer.match(/[\s\S]{1,1024}/g) || []
+          : [answer.toString()];
 
       parts.forEach((part, index) => {
         this.items.push({
           name: index === 0 ? question : `${question} (continued)`,
           value: part,
-          inline: false
+          inline: false,
         });
       });
     } catch (error) {
@@ -36,14 +37,17 @@ class DiscordMessageBuilder {
       this.items.push({
         name: question,
         value: "Error processing response",
-        inline: false
+        inline: false,
       });
     }
   }
 
   getEmbedColor() {
     // If role colors are enabled and a role is selected, use role color
-    if (CONFIG.discord.embed.color.useRoleColors && this.selectedRole?.embedColor) {
+    if (
+      CONFIG.discord.embed.color.useRoleColors &&
+      this.selectedRole?.embedColor
+    ) {
       return ColorUtils.hexToDecimal(this.selectedRole.embedColor);
     }
     // Otherwise use default color
@@ -51,26 +55,29 @@ class DiscordMessageBuilder {
   }
 
   buildPayload() {
-    // Convert HEX color to decimal for Discord
-    const embedColor = this.selectedRole?.embedColor
-      ? ColorUtils.hexToDecimal(this.selectedRole.embedColor)
-      : ColorUtils.hexToDecimal(CONFIG.discord.embed.defaultColor);
+    const embed = {
+      title: CONFIG.discord.embed.title,
+      color: this.getEmbedColor(),
+      fields: this.items,
+      url: CONFIG.discord.embed.url,
+      image: {
+        url: CONFIG.discord.embed.imageUrl,
+      },
+      footer: {
+        text: CONFIG.discord.embed.footerText,
+      },
+    };
+
+    // Add timestamp only if showTimestamp is true
+    if (CONFIG.discord.embed.showTimestamp) {
+      embed.timestamp = new Date().toISOString();
+    }
 
     return {
-      content: this.content,
-      embeds: [{
-        title: CONFIG.discord.embed.title,
-        color: embedColor,
-        fields: this.items,
-        url: CONFIG.discord.embed.url,
-        image: {
-          url: CONFIG.discord.embed.imageUrl,
-        },
-        footer: {
-          text: CONFIG.discord.embed.footerText
-        },
-        timestamp: new Date().toISOString()
-      }]
+      content: this.content.trim(),
+      username: CONFIG.discord.username,
+      avatar_url: CONFIG.discord.avatarUrl,
+      embeds: [embed],
     };
   }
 }

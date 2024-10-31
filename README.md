@@ -1,70 +1,101 @@
-# Google Forms to Discord Webhook
+# Google Forms в Discord Webhook
 
-*Read this in other languages: [English](README.md), [Русский](README.ru.md)*
+_Читать на других языках: [English](README.en.md), [Русский](README.md)_
 
-This Google Apps Script automatically forwards Google Form submissions to a Discord channel using webhooks. It formats the submissions into neat embeds and can mention specific roles based on form responses, with support for customizable embed colors.
+Этот скрипт Google Apps автоматически пересылает ответы из Google Forms в канал Discord с помощью вебхуков. Он форматирует ответы в аккуратные эмбеды и может упоминать определенные роли на основе ответов формы, с поддержкой настраиваемых цветов эмбедов, внешнего вида вебхука и временных меток.
 
-## Features
+## Возможности
 
-- 📝 Automatically processes Google Form submissions
-- 📨 Sends formatted embeds to Discord
-- 👥 Mentions relevant roles based on department selection
-- 🎨 Supports both role-specific and common embed colors
-- 🔄 Automatic color format conversion (HEX to Discord decimal)
-- 🆔 Formats Discord IDs into proper mentions
-- ↔️ Handles long responses by splitting them into multiple fields
-- ⚠️ Includes error handling and logging
+Основные возможности:
+- 📝 Автоматическая обработка ответов Google Forms
+- 📨 Отправка отформатированных эмбедов в Discord
+- 👥 Упоминание соответствующих ролей на основе выбора отдела
 
-## Setup
+Форматирование сообщений:
+- ↔️ Обработка длинных ответов путем разделения их на несколько полей
+- 🆔 Форматирование Discord ID в правильные упоминания
+- ⏰ Опциональное отображение временной метки в эмбедах
+- 🤖 Настраиваемое имя и аватар бота вебхука
+- 📋 Настраиваемые заголовки и описания полей формы
 
-### 1. Discord Setup
+Визуальная настройка:
+- 🎨 Поддержка как уникальных цветов для ролей, так и общего цвета
+- 🔄 Автоматическая конвертация форматов цветов (HEX в десятичный формат Discord)
+- 🖼️ Поддержка изображений в эмбедах
+- 👣 Настраиваемый текст нижнего колонтитула
 
-1. In your Discord server, go to Server Settings > Integrations > Webhooks
-2. Create a new webhook or use an existing one
-3. Copy the webhook URL
-4. Update the `webhookUrl` in `config.gs`
+Технические возможности:
+- 🔗 Автоматическая настройка URL формы
+- ⚙️ Валидация конфигурации при запуске
+- ⚠️ Включает обработку ошибок и логирование
+- 🔒 Встроенная валидация Discord ID с помощью регулярных выражений
+- 🔄 Автоматическая синхронизация вариантов выбора отдела с конфигурацией
 
-### 2. Google Forms Setup
+## Настройка
 
-1. Create a new Google Form or open an existing one
-2. Go to Script editor (Extensions > Apps Script)
-3. Create the following files and copy the respective code:
+### 1. Настройка Discord
+
+1. В вашем Discord сервере перейдите в Настройки сервера > Интеграции > Вебхуки
+2. Создайте новый вебхук или используйте существующий
+3. Скопируйте URL вебхука
+4. Обновите `webhookUrl` в `config.gs`
+
+### 2. Настройка Google Forms
+
+1. Создайте новую форму Google или откройте существующую
+2. Перейдите в редактор скриптов (Расширения > Apps Script)
+3. Создайте следующие файлы и скопируйте соответствующий код:
    - `config.gs`
    - `roles.gs`
    - `colors.gs`
    - `utils.gs`
    - `main.gs`
-4. Save all files
+   - `form-setup.gs`
+4. Сохраните все файлы
 
-### 3. Configuration
+### 3. Конфигурация
 
-#### Basic Configuration
-Update the following configurations in `config.gs`:
+#### Основная конфигурация
+
+Скрипт теперь автоматически получает URL вашей формы. Обновите следующие настройки в `config.gs`:
 
 ```javascript
-const CONFIG = {
-  discord: {
-    webhookUrl: "YOUR_WEBHOOK_URL",
-    embed: {
-      title: "Your Form Title",
-      color: {
-        useRoleColors: true,  // Toggle between role-specific colors or common color
-        defaultColor: "#7289DA"  // Default/common color in HEX format
+const CONFIG = initializeConfig();
+
+function initializeConfig() {
+  const activeForm = FormApp.getActiveForm();
+  const formUrl = activeForm.getPublishedUrl();
+
+  return {
+    discord: {
+      webhookUrl: "ВАШ_URL_ВЕБХУКА",        // URL вашего Discord вебхука
+      username: "Имя бота",                  // Настраиваемое имя для бота вебхука
+      avatarUrl: "",                         // Опционально: URL аватара для бота вебхука
+      embed: {
+        title: "Название Вашей Формы",       // Заголовок, отображаемый вверху эмбеда Discord
+        color: {
+          useRoleColors: true,               // true для использования цветов отделов, false для общего цвета
+          defaultColor: "#7289DA",           // Цвет по умолчанию/общий цвет в HEX формате
+        },
+        url: formUrl,                        // Автоматически устанавливается как URL вашей формы
+        imageUrl: "",                        // Опционально: URL изображения для включения в эмбед
+        footerText: "Текст нижнего колонтитула", // Текст, отображаемый внизу эмбеда
+        showTimestamp: true,                 // true для отображения временной метки в эмбедах
       },
-      url: "https://your-form-url.com",
-      imageUrl: "", // Optional image URL
-      footerText: "Your Footer Text"
-    }
-  },
-  form: {
-    multipleChoiceQuestionName: "Your Department Question",
-    discordIdIdentifier: "discord id"
-  }
-};
+    },
+    form: {
+      title: "Название формы",               // Заголовок вашей Google формы
+      description: "Описание формы",         // Текст описания вашей Google формы
+      multipleChoiceQuestionName: "Отдел", // Заголовок вопроса, используемый для определения упоминаемых ролей
+      discordIdIdentifier: "Discord ID",     // Заголовок вопроса, содержащий Discord ID для форматирования как упоминание
+    },
+  };
+}
 ```
 
-#### Role Configuration
-Update role IDs and colors in `roles.gs` according to your Discord server roles:
+#### Конфигурация ролей
+
+Обновите ID ролей и цвета в `roles.gs` в соответствии с ролями вашего Discord сервера:
 
 ```javascript
 const ROLES = {
@@ -74,86 +105,121 @@ const ROLES = {
     curatorRoleId: "curator_role_id",
     headRoleId: "head_role_id",
     depHeadRoleId: "dep_head_role_id",
-    embedColor: "#HEX_COLOR"  // Role-specific embed color
+    embedColor: "#HEX_COLOR",
   },
-  // Add more departments as needed
+  // Добавьте больше отделов при необходимости
 };
 ```
 
-### 4. Color Configuration
+### 4. Настройка и Валидация Формы
 
-#### Color Modes
-The script supports two color modes:
-1. **Role-specific Colors**: Each department/role can have its own embed color
-2. **Common Color**: All embeds use the same color
+1. В редакторе Apps Script создайте новый файл `form-setup.gs`
+2. Скопируйте предоставленный код настройки в файл
+3. Запустите функцию `setupForm()` для настройки формы:
+   - Настройка валидации Discord ID (регулярное выражение: `^\d{17,19}$`)
+   - Настройка вариантов выбора отдела на основе ROLES
+   - Установка заголовка и описания формы
 
-To switch between modes, update the `useRoleColors` flag in `config.gs`:
+Для обновления валидации формы позже:
+- Запустите `setupFormValidation()` чтобы обновить только правила валидации
+- Запустите `resetFormValidation()` если нужно удалить все валидации
+- Запустите `setupForm()` для полной настройки формы
+
+Примечание: Не забудьте повторно запустить эти функции настройки, если вы:
+- Вносите изменения в конфигурацию ROLES
+- Изменяете структуру формы
+- Нуждаетесь в обновлении правил валидации
+
+### 5. Настройка Цветов
+
+#### Режимы цветов
+
+Скрипт поддерживает два режима цветов:
+
+1. **Цвета для конкретных ролей**: Каждый отдел/роль может иметь свой собственный цвет эмбеда
+2. **Общий цвет**: Все эмбеды используют один и тот же цвет
+
+Для переключения между режимами обновите флаг `useRoleColors` в `config.gs`:
+
 ```javascript
 color: {
-  useRoleColors: true,  // true for role-specific colors, false for common color
-  defaultColor: "#7289DA"  // Used when useRoleColors is false or no role selected
+  useRoleColors: true,  // true для цветов ролей, false для общего цвета
+  defaultColor: "#7289DA"  // Используется когда useRoleColors false или роль не выбрана
 }
 ```
 
-#### Using the Color Utilities
-The script includes color utility functions in `colors.gs`:
+#### Использование утилит для работы с цветами
+
+Скрипт включает утилиты для работы с цветами в `colors.gs`:
 
 ```javascript
-// Convert HEX to Discord decimal color
-const decimalColor = ColorUtils.hexToDecimal('#FF0000');
+// Конвертация HEX в десятичный цвет Discord
+const decimalColor = ColorUtils.hexToDecimal("#FF0000");
 ```
 
-## Usage
+### 6. Настройка триггера
 
-The script automatically triggers when a form is submitted. Each submission will:
+1. В редакторе Apps Script нажмите на "Триггеры" (значок часов на боковой панели)
+2. Нажмите "+ Добавить триггер"
+3. Настройте триггер:
+   - Выберите функцию: `onSubmit`
+   - Выберите источник события: "Из формы"
+   - Выберите тип события: "При отправке формы"
+4. Нажмите "Сохранить"
+5. Предоставьте необходимые разрешения при запросе
 
-1. Create a Discord embed with the form responses
-2. Format any Discord IDs as mentions
-3. Mention relevant department roles based on the department selection
-4. Apply appropriate color based on the color mode setting
-5. Handle long responses by splitting them into multiple fields
-6. Include a timestamp and footer
+## Использование
 
-## Example Discord Output
+Скрипт автоматически срабатывает при отправке формы. Каждый ответ будет:
 
-```
-@DepartmentHead @DepartmentDeputy
+1. Создавать эмбед Discord с ответами формы
+2. Форматировать Discord ID как упоминания
+3. Упоминать соответствующие роли отделов на основе выбора отдела
+4. Применять соответствующий цвет на основе настроек режима цветов
+5. Обрабатывать длинные ответы, разделяя их на несколько полей
+6. Включать временную метку и нижний колонтитул
 
-Embed Title: Your Form Title
-Fields:
-- Question 1: Answer 1
-- Question 2: Answer 2
-- Discord ID: @user
-- Department: Department Name
-Footer: Your Footer Text
-Timestamp: [Current Time]
-```
+## Пример вывода в Discord
 
-## Error Handling
+![](./FormsToDiscordExample.png)
 
-The script includes error handling for:
-- Invalid responses
-- Discord webhook failures
-- Message formatting issues
-- Role mention errors
+## Обработка ошибок
 
-All errors are logged to the Apps Script console for debugging.
+Скрипт включает обработку следующих ошибок:
 
-## Contributing
+- Некорректные ответы
+- Сбои вебхука Discord
+- Проблемы форматирования сообщений
+- Ошибки упоминания ролей
+- Ошибки валидации конфигурации
+- Проблемы получения URL формы
 
-1. Fork the repository
-2. Create a new branch for your feature
-3. Commit your changes
-4. Create a pull request
+Все ошибки логируются в консоль Apps Script для отладки.
 
-## License
+## Устранение неполадок
 
-MIT License - feel free to use and modify as needed.
+Если сообщения не отправляются:
+1. Проверьте логи выполнения в Apps Script на наличие детальных сообщений об ошибках
+2. Убедитесь, что URL вебхука корректен и вебхук не был удален
+3. Проверьте, что триггер правильно настроен и авторизован
+4. Подтвердите, что заголовки вопросов формы соответствуют вашей конфигурации
+5. Проверьте, что ID ролей корректны и роли все еще существуют на вашем сервере
 
-## Credits
+## Как внести свой вклад
 
-Created and maintained by JellyColonel
+1. Сделайте форк репозитория
+2. Создайте новую ветку для вашей функции
+3. Зафиксируйте ваши изменения
+4. Создайте pull request
 
-## Support
+## Лицензия
 
-For issues and feature requests, please create an issue in the GitHub repository.
+MIT License - вы можете свободно использовать и модифицировать код по своему усмотрению.
+
+## Авторство
+
+Создано и поддерживается JellyColonel (Discord: jellycolonel)
+
+## Поддержка
+
+По вопросам и предложениям создавайте issue в GitHub репозитории.

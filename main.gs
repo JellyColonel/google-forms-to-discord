@@ -1,15 +1,17 @@
 function onSubmit(e) {
   try {
+    validateConfig();
+
     const messageBuilder = new DiscordMessageBuilder();
     const formResponses = e.response.getItemResponses();
-    
+
     // Process form responses
-    formResponses.forEach(responseAnswer => {
+    formResponses.forEach((responseAnswer) => {
       const question = responseAnswer.getItem().getTitle();
       let answer = responseAnswer.getResponse();
 
       // Handle Discord ID formatting
-      if (question.toLowerCase().includes(CONFIG.form.discordIdIdentifier)) {
+      if (question.includes(CONFIG.form.discordIdIdentifier)) {
         answer = `<@${answer}>`;
       }
 
@@ -29,17 +31,21 @@ function onSubmit(e) {
         "Content-Type": "application/json",
       },
       muteHttpExceptions: true,
-      payload: JSON.stringify(payload)
+      payload: JSON.stringify(payload),
     };
 
-    const webhookResponse = UrlFetchApp.fetch(CONFIG.discord.webhookUrl, options);
-    
-    if (webhookResponse.getResponseCode() !== 200) {
-      console.error('Discord webhook failed:', webhookResponse.getContentText());
-      throw new Error('Failed to send message to Discord');
-    }
+    const webhookResponse = UrlFetchApp.fetch(
+      CONFIG.discord.webhookUrl,
+      options
+    );
 
+    if (webhookResponse.getResponseCode() !== 204) {
+      const responseContent = webhookResponse.getContentText();
+      throw new Error(
+        `Discord webhook failed: Status ${webhookResponse.getResponseCode()}, Response: ${responseContent}`
+      );
+    }
   } catch (error) {
-    console.error('Error in onSubmit:', error);
+    console.error("Error in onSubmit:", error);
   }
 }

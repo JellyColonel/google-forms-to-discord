@@ -5,7 +5,7 @@ const ROLES = {
     curatorRoleId: "1274142510460964945",
     headRoleId: "1274111070444982369",
     depHeadRoleId: "1274141601869991936",
-    embedColor: "#ff0a0e"
+    embedColor: "#ff0a0e",
   },
   PM: {
     roleName: "PM",
@@ -13,7 +13,7 @@ const ROLES = {
     curatorRoleId: "1274142507789324299",
     headRoleId: "1287327583112925289",
     depHeadRoleId: "1287327650880163840",
-    embedColor: "#3498db"
+    embedColor: "#3498db",
   },
   DI: {
     roleName: "DI",
@@ -21,7 +21,7 @@ const ROLES = {
     curatorRoleId: "1274141607784091658",
     headRoleId: "1274111070444982367",
     depHeadRoleId: "1274141612288512031",
-    embedColor: "#2ecc71"
+    embedColor: "#2ecc71",
   },
   PSED: {
     roleName: "PSED",
@@ -29,7 +29,7 @@ const ROLES = {
     curatorRoleId: "1274142514642948107",
     headRoleId: "1274111070444982368",
     depHeadRoleId: "1274141615702806619",
-    embedColor: "#d39d39"
+    embedColor: "#d39d39",
   },
   FD: {
     roleName: "FD",
@@ -37,6 +37,6 @@ const ROLES = {
     curatorRoleId: "483906743567646722",
     headRoleId: "1287327689325416498",
     depHeadRoleId: "1287327760938696735",
-    embedColor: "#e9600c"
-  }
+    embedColor: "#e9600c",
+  },
 };
