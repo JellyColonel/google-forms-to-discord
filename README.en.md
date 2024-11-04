@@ -11,25 +11,49 @@ Core Features:
 - 📨 Sends formatted embeds to Discord
 - 👥 Mentions relevant roles based on department selection
 
+Message Content Configuration:
+- 🔄 Support for both dynamic and static content modes
+  - Dynamic: Automatically generates mentions based on department selection
+  - Static: Uses predefined text for all messages
+- 👥 Configurable role mention system:
+  - Curator mentions
+  - Head mentions
+  - Department head mentions
+- 📝 Custom static text support for consistent messaging
+
 Message Formatting:
 - ↔️ Handles long responses by splitting them into multiple fields
+- 📑 Automatically splits large responses into multiple embeds (max 25 fields per embed)
+- 🔍 Filters out empty responses automatically
 - 🆔 Formats Discord IDs into proper mentions
 - ⏰ Optional timestamp display in embeds
 - 🤖 Customizable webhook bot username and avatar
-- 📋 Customizable form field headers and descriptions
+- 📎 Maximum of 10 embeds per message for large submissions
+
+Message Structure:
+- 📊 Smart message splitting with automatic field management
+- 📑 Enforces Discord limits (25 fields per embed, 10 embeds max)
+- 🔀 Intelligent field distribution across multiple embeds
+- 📝 Specific mention ordering (Curator -> Head -> Dep.Head)
+- ✂️ Automatic content trimming
+- 🚫 Smart empty content handling (omits empty fields)
 
 Visual Customization:
 - 🎨 Supports both role-specific and common embed colors
 - 🔄 Automatic color format conversion (HEX to Discord decimal)
 - 🖼️ Support for images in embeds
-- 👣 Customizable footer text
+- 👣 Customizable footer text and icon
+- 🎯 Automatic text color adjustment (black/white) based on background color
+- 📌 Custom titles for each embed
+- 🔗 URL linking support in embeds
 
-Technical Capabilities:
-- 🔗 Auto-configures form URL
-- ⚙️ Validates configuration on startup
-- ⚠️ Includes error handling and logging
-- 🔒 Built-in Discord ID validation using regex
-- 🔄 Automatic synchronization of department choices with configuration
+Error Handling and Logging:
+- 📝 Detailed console logging for debugging
+- 🔍 Step-by-step process logging
+- ⚠️ Warning system for field count overflow
+- 🔒 Response code validation (checking for 204)
+- 📊 Error stack trace logging
+- ⚡ Specific error handling for webhook responses
 
 ## Setup
 
@@ -79,21 +103,20 @@ function initializeConfig() {
         url: formUrl,                        // Automatically set to your form's URL
         imageUrl: "",                        // Optional: URL for an image to include in embeds
         footerText: "Your Footer Text",      // Text displayed at the bottom of Discord embed
+        footerIcon: "",                      // Optional: URL for footer icon
         showTimestamp: true,                 // Set to true to show timestamp in embeds
       },
       content: {
         mode: "dynamic",                     // Can be "static" or "dynamic". Static uses fixed text, dynamic uses mentions
         staticText: "",                      // Fixed text to use when mode is "static"
         includeMentions: {                   // Configure which roles to mention in dynamic mode
-          depHead: true,                     // Whether to include department head mentions
+          curator: true,                     // Whether to include curator mentions
           head: true,                        // Whether to include head mentions
-          curator: false                     // Whether to include curator mentions
+          depHead: true                      // Whether to include department head mentions
         }
       }
     },
     form: {
-      title: "Form Title",                   // Title of your Google Form
-      description: "Form Description",        // Description text for your Google Form
       multipleChoiceQuestionName: "Department Selection", // Question title used to determine which roles to mention
       discordIdIdentifier: "Discord ID",     // Question title containing Discord ID to be formatted as mention
     },
@@ -111,9 +134,9 @@ The script supports two modes for message content:
      mode: "dynamic",
      staticText: "",
      includeMentions: {
-       depHead: true,  // Include department head mentions
+       curator: true,  // Include curator mentions
        head: true,     // Include head mentions
-       curator: false  // Include curator mentions
+       depHead: true   // Include department head mentions
      }
    }
    ```
@@ -122,7 +145,7 @@ The script supports two modes for message content:
    ```javascript
    content: {
      mode: "static",
-     staticText: "New application submitted!",
+     staticText: "New submission received!",
      includeMentions: {} // Ignored in static mode
    }
    ```
@@ -139,35 +162,15 @@ Update role IDs and colors in `roles.gs` according to your Discord server roles:
 ```javascript
 const ROLES = {
   DEPARTMENT_NAME: {
-    roleName: "Department Name",
     roleId: "role_id",
     curatorRoleId: "curator_role_id",
     headRoleId: "head_role_id",
     depHeadRoleId: "dep_head_role_id",
-    embedColor: "#HEX_COLOR", // Role-specific embed color
+    embedColor: "#HEX_COLOR",
   },
   // Add more departments as needed
 };
 ```
-
-### 4. Form Setup and Validation
-
-1. In the Apps Script editor, create a new file named `form-setup.gs`
-2. Copy the provided setup code into the file
-3. Run the `setupForm()` function to configure your form:
-   - Set up Discord ID validation (regex pattern: `^\d{17,19}$`)
-   - Configure department choices based on ROLES
-   - Set form title and description
-
-To update form validation later:
-- Run `setupFormValidation()` to update just the validation rules
-- Run `resetFormValidation()` if you need to remove all validations
-- Run `setupForm()` to perform a complete form setup
-
-Note: Remember to run these setup functions again if you:
-- Make changes to the ROLES configuration
-- Modify the form structure
-- Need to update validation rules
 
 ### 5. Color Configuration
 
@@ -217,6 +220,9 @@ The script automatically triggers when a form is submitted. Each submission will
 4. Apply appropriate color based on the color mode setting
 5. Handle long responses by splitting them into multiple fields
 6. Include a timestamp and footer
+7. Automatically split large submissions across multiple embeds (up to 10)
+8. Skip empty responses
+9. Adjust text color based on background for optimal readability
 
 ## Example Discord Output
 
@@ -232,8 +238,16 @@ The script includes error handling for:
 - Role mention errors
 - Configuration validation
 - Form URL retrieval issues
+- Field count overflow
+- Response code validation
+- Empty or null values
 
-All errors are logged to the Apps Script console for debugging.
+All errors and warnings are logged to the Apps Script console for debugging, including:
+- Detailed process logs
+- Error stack traces
+- Warning messages
+- Response codes
+- Field processing status
 
 ## Troubleshooting
 
@@ -242,8 +256,8 @@ If messages aren't being sent:
 1. Check the Apps Script execution logs for detailed error messages
 2. Verify the webhook URL is correct and the webhook hasn't been deleted
 3. Ensure the trigger is properly set up and authorized
-4. Confirm that form question titles match your configuration
-5. Check that role IDs are correct and the roles still exist in your server
+4. Check that role IDs are correct and the roles still exist in your server
+5. Verify field counts don't exceed Discord's limits (25 per embed, 10 embeds max)
 
 ## Contributing
 

@@ -1,20 +1,46 @@
 class DiscordMessageBuilder {
   constructor() {
-    this.content = "";
+    this.content =
+      CONFIG.discord.content.mode === "static"
+        ? CONFIG.discord.content.staticText || ""
+        : "";
     this.items = [];
     this.selectedRole = null;
     this.MAX_FIELDS_PER_EMBED = 25;
+    this.MAX_EMBEDS_PER_MESSAGE = 10;
   }
 
   addMentionsByRole(roleName) {
     const role = ROLES[roleName];
     if (!role) {
       console.warn(`Role ${roleName} not found`);
+      // Don't return early - we still want to keep the static content
+      this.selectedRole = null;
       return;
     }
 
     this.selectedRole = role;
-    this.content += `<@&${role.curatorRoleId}>`;
+
+    // Only modify content if in dynamic mode
+    if (CONFIG.discord.content.mode === "dynamic") {
+      const mentions = [];
+      const { includeMentions } = CONFIG.discord.content;
+
+      // Add mentions in specific order: Curator -> Head -> Dep.Head
+      if (includeMentions.curator && role.curatorRoleId) {
+        mentions.push(`<@&${role.curatorRoleId}>`);
+      }
+
+      if (includeMentions.head && role.headRoleId) {
+        mentions.push(`<@&${role.headRoleId}>`);
+      }
+
+      if (includeMentions.depHead && role.depHeadRoleId) {
+        mentions.push(`<@&${role.depHeadRoleId}>`);
+      }
+
+      this.content = mentions.join(" ") + (mentions.length > 0 ? " " : "");
+    }
   }
 
   addField(question, answer) {
@@ -91,7 +117,6 @@ class DiscordMessageBuilder {
         embed.timestamp = new Date().toISOString();
       }
 
-      // Add image to the last embed if provided
       if (CONFIG.discord.embed.imageUrl?.trim()) {
         embed.image = {
           url: CONFIG.discord.embed.imageUrl.trim(),
@@ -103,38 +128,42 @@ class DiscordMessageBuilder {
   }
 
   buildPayload() {
-    // Split fields into chunks of 25
+    // Calculate how many fields can fit in total
+    const maxTotalFields =
+      this.MAX_FIELDS_PER_EMBED * this.MAX_EMBEDS_PER_MESSAGE;
+
+    if (this.items.length > maxTotalFields) {
+      console.warn(
+        `Too many fields (${this.items.length}). Truncating to ${maxTotalFields} fields.`
+      );
+      this.items = this.items.slice(0, maxTotalFields);
+    }
+
     const chunks = [];
     for (let i = 0; i < this.items.length; i += this.MAX_FIELDS_PER_EMBED) {
       chunks.push(this.items.slice(i, i + this.MAX_FIELDS_PER_EMBED));
     }
 
-    // Create an embed for each chunk
     const embeds = chunks.map((chunk, index) => {
       const isFirst = index === 0;
       const isLast = index === chunks.length - 1;
       return this.createEmbed(chunk, isFirst, isLast);
     });
 
-    // Build the final payload
     const payload = {
       embeds: embeds,
+      // Always include content from constructor, whether static or dynamic
+      content: this.content,
     };
 
-    // Add content only if it's not empty
-    if (this.content.trim()) {
-      payload.content = this.content.trim();
-    }
-
-    // Add username only if it's provided and not empty
     if (CONFIG.discord.username?.trim()) {
       payload.username = CONFIG.discord.username.trim();
     }
 
-    // Add avatar URL only if it's provided and not empty
     if (CONFIG.discord.avatarUrl?.trim()) {
       payload.avatar_url = CONFIG.discord.avatarUrl.trim();
     }
+
     return payload;
   }
 }
