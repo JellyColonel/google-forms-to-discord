@@ -1,15 +1,15 @@
 function initializeConfig() {
   const activeForm = FormApp.getActiveForm();
   const formUrl = activeForm.getPublishedUrl();
+  const formTitle = activeForm.getTitle();
 
   return {
     discord: {
-      webhookUrl:
-        "https://discord.com/api/webhooks/1310978770051530802/gF1Cdi5r-kRR8l6ESXvmYNgk8ljRh3gLa2vKgTsQXAh3VZA7FLLmFyY6z8mf8Q_EgukH",
+      webhookUrl: "<YOUR_WEBHOOK_URL_HERE>",
       username: "",
       avatarUrl: "",
       embed: {
-        title: "Электронное заявление на перевод в EMS Boston",
+        title: formTitle,
         color: {
           useRoleColors: true,
           defaultColor: "#7289DA",
